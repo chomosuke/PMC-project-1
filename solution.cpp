@@ -43,8 +43,8 @@ void assert_msg(int cond, const char* msg) {
 
 typedef struct {
     int x, y;
-    int prev_x, prev_y;
-    int is_closed;
+    char dx, dy;
+    char is_closed;
     double cost;
 } node;
 
@@ -198,8 +198,8 @@ void a_star(double** board, int x_size, int y_size, params par) {
                         cand[new_x][new_y].cost = pivot->cost + node_cost;
                         cand[new_x][new_y].x = new_x;
                         cand[new_x][new_y].y = new_y;
-                        cand[new_x][new_y].prev_x = pivot->x;
-                        cand[new_x][new_y].prev_y = pivot->y;
+                        cand[new_x][new_y].dx = dx;
+                        cand[new_x][new_y].dy = dy;
                         /* Here we simply insert a better path into the PQ. */
                         /* It is more efficient to change the weight of */
                         /* the old entry, but this also works. */
@@ -220,7 +220,7 @@ void a_star(double** board, int x_size, int y_size, params par) {
     node* p = &cand[x_end][y_end];
     while (!is_equal(p, 0, 0)) {
         printf("%d %d %g %g\n", p->x, p->y, board[p->x][p->y], p->cost);
-        p = &(cand[p->prev_x][p->prev_y]);
+        p = &(cand[p->x - p->dx][p->y - p->dy]);
     }
     printf("%d %d %g %g\n", 0, 0, board[0][0], p->cost);
 }
