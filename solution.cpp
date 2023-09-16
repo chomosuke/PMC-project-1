@@ -165,6 +165,7 @@ void a_star(double** board, int x_size, int y_size, params par) {
         pivot->is_closed = CLOSED;
 
         /* Expand all neighbours */
+#pragma omp parallel for collapse(2)
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 int new_x = pivot->x + dx;

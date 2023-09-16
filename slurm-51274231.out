@@ -1,6 +1,6 @@
 Ohayo gazaimasu
-rm solution -f
-clang++ -O3 solution.cpp -o solution -std=c++20
+rm solution PQ-Dijkstra -f
+clang++ -O3 -fopenmp solution.cpp -o solution -std=c++20
 9 9 2568 519.1
 9 8 2113 517.7
 9 7 1559 500.5
@@ -19,4 +19,5 @@ clang++ -O3 solution.cpp -o solution -std=c++20
 2 0 1116 94.9
 1 0 1991 35.4
 0 0 1654 27.5
-Time: 6697516 6.721674
+Time: 14054007 4.621607
+rm solution PQ-Dijkstra -f

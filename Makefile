@@ -1,5 +1,5 @@
 solution: solution.cpp
-	clang++ -O3 solution.cpp -o solution -std=c++20
+	clang++ -O3 -fopenmp solution.cpp -o solution -std=c++20
 
 PQ-Dijkstra: PQ-Dijkstra.c
 	clang -O3 PQ-Dijkstra.c -o PQ-Dijkstra

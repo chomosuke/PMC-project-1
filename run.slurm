@@ -4,17 +4,17 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
-#SBATCH --time=00:00:30
+#SBATCH --time=00:00:10
 #SBATCH --partition=cascade
 
 echo 'Ohayo gazaimasu'
-
-export OMP_NUM_THREADS=4
 
 module load OpenMPI/4.1.4
 module load Clang/13.0.1
 
 make clean
-make PQ-Dijkstra
+make solution
 
-./PQ-Dijkstra < grid10x10expensive.txt
+OMP_NUM_THREADS=4 ./solution < grid10x10expensive.txt
+
+make clean
