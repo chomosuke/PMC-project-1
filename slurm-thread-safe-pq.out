@@ -19,5 +19,5 @@ clang++ -O3 -fopenmp solution.cpp -o solution -std=c++20
 2 0 1116 94.9
 1 0 1991 35.4
 0 0 1654 27.5
-Time: 9056717 2.276886
+Time: 9047061 2.272868
 rm solution PQ-Dijkstra -f

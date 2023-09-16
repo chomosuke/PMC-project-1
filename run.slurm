@@ -7,7 +7,7 @@
 #SBATCH --time=00:00:10
 #SBATCH --partition=cascade
 
-echo 'Ohayo gazaimasu'
+echo 'Ohayo gazaimasu 4 threads'
 
 module load OpenMPI/4.1.4
 module load Clang/13.0.1

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/time.h> // for clock()
 #include <time.h>     // for clock()
+#include <assert.h>
 
 // cpp headers
 #include <iostream>
@@ -193,7 +194,8 @@ void a_star(double** board, int x_size, int y_size, params par) {
                     /* Note: this calculates costs multiple times */
                     /* You will probably want to avoid that, */
                     /* but this version is easy to parallelize. */
-                    double node_cost = cell_cost(new_x, new_y, &par, board, cell_cost_cache);
+                    double node_cost =
+                        cell_cost(new_x, new_y, &par, board, cell_cost_cache);
                     if (pivot->cost + node_cost < cand[new_x][new_y].cost) {
                         cand[new_x][new_y].cost = pivot->cost + node_cost;
                         cand[new_x][new_y].x = new_x;
@@ -203,6 +205,7 @@ void a_star(double** board, int x_size, int y_size, params par) {
                         /* Here we simply insert a better path into the PQ. */
                         /* It is more efficient to change the weight of */
                         /* the old entry, but this also works. */
+#pragma omp critical
                         pq.push(&(cand[new_x][new_y]));
                     }
                 }

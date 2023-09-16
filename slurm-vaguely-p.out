@@ -1,4 +1,4 @@
-Ohayo gazaimasu
+Ohayo gazaimasu 4 threads
 rm solution PQ-Dijkstra -f
 clang++ -O3 -fopenmp solution.cpp -o solution -std=c++20
 9 9 2568 519.1
