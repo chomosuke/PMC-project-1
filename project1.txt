@@ -78,7 +78,8 @@ Assessment Tasks
     Sample code that performs Dijkstra's algorithm sequentially is provided.
     Do not modify the function  main()  or  cell_cost().
     You may modify any other part of the code.
-    It contains some debugging output, which you are welcome to delete or edit.
+    It contains some debugging output, which you are welcome to delete or
+    edit.
 
 3)  Design and apply an appropriate methodology for testing the
     performance of your parallel implementation on a 4 socket cluster

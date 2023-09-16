@@ -31,7 +31,7 @@ double get_wall_time() {
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-void assert_msg(int cond, char *msg) {
+void assert_msg(int cond, const char *msg) {
     if (!cond) {
         fprintf(stderr, "%s\n", msg);
         exit(1);
