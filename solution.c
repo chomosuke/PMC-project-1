@@ -1,3 +1,7 @@
+// Name:       Shuang Li
+// Login ID:   shangl3
+// Student ID: 1044137
+
 #include <float.h> // for DBL_MAX
 #include <stdio.h>
 #include <stdlib.h>
