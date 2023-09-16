@@ -90,6 +90,13 @@ double cell_cost(long int seed, params* par) {
     return (10 + (cost >> (8 * sizeof(unsigned long) - res - scale))) / 10.0;
 }
 
+double cell_cost(int x, int y, params* par, double** board, double** cache) {
+    if (cache[x][y] == 0) {
+        cache[x][y] = cell_cost(board[x][y], par);
+    }
+    return cache[x][y];
+}
+
 /******************************************************************************/
 /* Priority queue */
 /* Entries are of type *node. */
@@ -128,19 +135,26 @@ double** read_board(int x_size, int y_size) {
     return board;
 }
 
-node** init_cand(int x_size, int y_size) {
-    node** cand = (node**)malloc(x_size * sizeof(node*));
-    node* cand_data = (node*)malloc(x_size * y_size * sizeof(node));
+template <typename T> T** init_2D(int x_size, int y_size) {
+    T** cand = (T**)malloc(x_size * sizeof(T*));
+    T* cand_data = (T*)malloc(x_size * y_size * sizeof(T));
     assert_msg(cand != NULL && cand_data != NULL, "Could not allocate open");
 
-    memset(cand_data, 0, y_size * x_size * sizeof(node));
+    memset(cand_data, 0, y_size * x_size * sizeof(T));
 
     for (int i = 0; i < x_size; i++) {
         cand[i] = cand_data + i * y_size;
+    }
+
+    return cand;
+}
+
+node** init_cand(int x_size, int y_size) {
+    node** cand = init_2D<node>(x_size, y_size);
+    for (int i = 0; i < x_size; i++) {
         for (int j = 0; j < y_size; j++)
             cand[i][j].cost = DBL_MAX;
     }
-
     return cand;
 }
 
@@ -156,10 +170,12 @@ void a_star(double** board, int x_size, int y_size, params par) {
     int y_end = y_size - 1;
 
     priority_queue<node*, vector<node*>, Compare> pq;
+    double** cell_cost_cache = init_2D<double>(x_size, y_size);
+
     node* pivot;
     node** cand = init_cand(x_size, y_size);
     pq.push(&(cand[0][0]));
-    cand[0][0].cost = cell_cost(board[0][0], &par);
+    cand[0][0].cost = cell_cost(0, 0, &par, board, cell_cost_cache);
 
     while (!is_equal(pivot = pop(&pq), x_end, y_end)) {
         pivot->is_closed = CLOSED;
@@ -177,7 +193,7 @@ void a_star(double** board, int x_size, int y_size, params par) {
                     /* Note: this calculates costs multiple times */
                     /* You will probably want to avoid that, */
                     /* but this version is easy to parallelize. */
-                    double node_cost = cell_cost(board[new_x][new_y], &par);
+                    double node_cost = cell_cost(new_x, new_y, &par, board, cell_cost_cache);
                     if (pivot->cost + node_cost < cand[new_x][new_y].cost) {
                         cand[new_x][new_y].cost = pivot->cost + node_cost;
                         cand[new_x][new_y].x = new_x;
