@@ -1,6 +1,6 @@
 Ohayo gazaimasu
-rm solution -f
-clang solution.c -o solution
+rm solution PQ-Dijkstra -f
+clang -O3 PQ-Dijkstra.c -o PQ-Dijkstra
 9 9 2568 519.1
 9 8 2113 517.7
 9 7 1559 500.5
@@ -19,4 +19,4 @@ clang solution.c -o solution
 2 0 1116 94.9
 1 0 1991 35.4
 0 0 1654 27.5
-Time: 19248970 19.329715
+Time: 6696482 6.722335
