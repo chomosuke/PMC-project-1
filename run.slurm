@@ -4,12 +4,11 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
-#SBATCH --time=00:00:10
+#SBATCH --time=00:00:5
 #SBATCH --partition=cascade
 
 echo 'Ohayo gazaimasu 4 threads'
 
-module load OpenMPI/4.1.4
 module load Clang/13.0.1
 
 make clean
