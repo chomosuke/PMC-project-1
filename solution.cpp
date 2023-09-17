@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <cmath>
 #include <float.h> // for DBL_MAX
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,7 @@
 #include <iostream>
 #include <omp.h>
 #include <queue>
+#include <vector>
 
 using namespace std;
 
@@ -57,6 +59,18 @@ _inline int is_equal(node* n, int x, int y) {
     return !n || (n->x == x && n->y == y);
 }
 
+template <typename T> T** init_2D(int x_size, int y_size) {
+    T** cand = (T**)malloc(x_size * sizeof(T*));
+    T* cand_data = (T*)malloc(x_size * y_size * sizeof(T));
+    assert_msg(cand != NULL && cand_data != NULL, "Could not allocate open");
+
+    for (int i = 0; i < x_size; i++) {
+        cand[i] = cand_data + i * y_size;
+    }
+
+    return cand;
+}
+
 /******************************************************************************/
 /*
  * Calculate the cost of each square in the grid, given its seed.
@@ -93,9 +107,21 @@ double cell_cost(long int seed, params* par) {
     return (10 + (cost >> (8 * sizeof(unsigned long) - res - scale))) / 10.0;
 }
 
-double cell_cost(int x, int y, double** board, double** cache, params* par) {
+double** board;
+int x_size;
+int y_size;
+params par;
+
+double** init_cache() {
+    double** cache = init_2D<double>(x_size, y_size);
+    memset(cache[0], 0, y_size * x_size * sizeof(double));
+    return cache;
+}
+
+double cell_cost(int x, int y) {
+    static double** cache = init_cache();
     if (cache[x][y] == 0) {
-        cache[x][y] = cell_cost(board[x][y], par);
+        cache[x][y] = cell_cost(board[x][y], &par);
     }
     return cache[x][y];
 }
@@ -138,18 +164,6 @@ double** read_board(int x_size, int y_size) {
     return board;
 }
 
-template <typename T> T** init_2D(int x_size, int y_size) {
-    T** cand = (T**)malloc(x_size * sizeof(T*));
-    T* cand_data = (T*)malloc(x_size * y_size * sizeof(T));
-    assert_msg(cand != NULL && cand_data != NULL, "Could not allocate open");
-
-    for (int i = 0; i < x_size; i++) {
-        cand[i] = cand_data + i * y_size;
-    }
-
-    return cand;
-}
-
 node** init_cand(int x_size, int y_size) {
     node** cand = init_2D<node>(x_size, y_size);
     memset(cand[0], 0, y_size * x_size * sizeof(node));
@@ -163,16 +177,47 @@ node** init_cand(int x_size, int y_size) {
 
 /******************************************************************************/
 
-double find_delta(int x_size, int y_size, double** board, double** cache,
-                  params* par) {
+typedef struct {
+    int** in_set;
+    int in_true;
+    vector<pair<int, int>> set;
+} set;
+
+_inline set set_new() {
+    set self;
+    self.in_set = init_2D<int>(x_size, y_size);
+    memset(self.in_set[0], 0, y_size * x_size * sizeof(int));
+    self.in_true = 1;
+    return self;
+}
+
+_inline void set_clear(set* self) {
+    self->in_true++;
+    self->set.clear();
+}
+
+_inline void set_insert(set* self, pair<int, int> e) {
+    int x = e.first, y = e.second;
+    // TODO: further examine this to see if it can be sped up
+    if (self->in_set[x][y] != self->in_true) {
+        self->in_set[x][y] = self->in_true;
+        self->set.push_back(e);
+    }
+}
+
+_inline void free_set(set self) { free(self.in_set); }
+
+/******************************************************************************/
+
+double find_delta() {
     double max_cost = 0;
-    x_size = min(x_size, 2);
-    y_size = min(y_size, 2);
+    int x_s = min(x_size, 2);
+    int y_s = min(y_size, 2);
 
     // #pragma omp parallel for collapse(2)
-    for (int i = 0; i < x_size; i++) {
-        for (int j = 0; j < y_size; j++) {
-            double cost = cell_cost(i, j, board, cache, par);
+    for (int i = 0; i < x_s; i++) {
+        for (int j = 0; j < y_s; j++) {
+            double cost = cell_cost(i, j);
             // #pragma omp critical
             // use reduce
             if (max_cost < cost)
@@ -183,128 +228,219 @@ double find_delta(int x_size, int y_size, double** board, double** cache,
     return max_cost / 8;
 }
 
-_inline void move(int x, int y, int** bmap, int** bloc, double** distance,
-                  double delta, vector<vector<pair<int, int>>>& b) {
+// bmap[x][y] is the bucket (x, y) is in. -1 means not in any bucket.
+int** bmap;
+// This is used to fast remove (x, y) from bucket by setting b[i][bloc[x][y]] to
+// -1.
+int** bloc;
+// when first == -1, it's a null member.
+vector<vector<pair<int, int>>> b;
+// must obtain b_all_lock before b_lock
+// omp_lock_t b_all_lock;
+// vector<omp_lock_t> b_lock;
+
+// if not in any bucket then it's no-op
+_inline void remove_b(int x, int y) {
     if (bmap[x][y] != -1) {
+        // make this member null
         b[bmap[x][y]][bloc[x][y]].first = -1;
+        bmap[x][y] = -1;
     }
-    int i = floor(distance[x][y] / delta);
-    while (i >= b.size()) {
-        // #pragma omp critical
-        b.push_back(vector<pair<int, int>>());
-    }
-    // #pragma omp critical
-    b[i].push_back(pair(x, y));
-    bmap[x][y] = i;
 }
 
-vector<pair<int, int>> par_relax(vector<pair<int, int>>& b, int** bmap,
-                                 double** distance, bool light, double delta,
-                                 int x_size, int y_size, double** board,
-                                 double** cache, params* par) {
-    static int** visited = init_2D<int>(x_size, y_size);
-    static int v_true = 1;
-    v_true++;
-    vector<pair<int, int>> req;
+double delta;
+double** dss;
+
+_inline void insert_bi(int x, int y, int bi) {
+    assert(bmap[x][y] == -1);
+    bmap[x][y] = bi;
+    // TODO: try moving it inside
+    // omp_set_lock(&b_all_lock);
+    while (bi >= b.size()) {
+        vector<pair<int, int>> v;
+        b.push_back(v);
+        // omp_lock_t l;
+        // omp_init_lock(&l);
+        // b_lock.push_back(l);
+    }
+    // omp_unset_lock(&b_all_lock);
+
+    // omp_set_lock(&b_all_lock);
+    // omp_set_lock(&b_lock[bi]);
+    bloc[x][y] = b[bi].size();
+    b[bi].push_back(pair(x, y));
+    // omp_unset_lock(&b_lock[bi]);
+    // omp_unset_lock(&b_all_lock);
+}
+
+// removed == NULL means heavy
+void relax(vector<pair<int, int>>& bi, set* relaxed, set* removed) {
     // #pragma omp parallel for
-    for (int i = 0; i < b.size(); i++) {
-        int x = b[i].first, y = b[i].second;
-        bmap[x][y] = -1;
-        if (x != -1) {
-            // #pragma omp parallel for collapse(2)
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    int new_x = x + dx, new_y = y + dy;
-                    if (new_x < x_size && new_y < y_size && new_x >= 0 &&
-                        new_y >= 0) {
-                        double cost =
-                            cell_cost(new_x, new_y, board, cache, par);
-                        if ((cost <= delta) == light) {
+    // no need to lock anything in this for loop because no vector is
+    // getting modified This is because insert isn't being called
+    for (int j = 0; j < bi.size(); j++) {
+        int x = bi[j].first, y = bi[j].second;
+        if (x == -1) {
+            continue;
+        }
 
-                            double new_cost = distance[x][y] + cost;
+        if (removed != NULL) {
+            remove_b(x, y);
+            // #pragma omp critical(removed)
+            set_insert(removed, pair(x, y));
+        }
 
-                            // #pragma omp critical
-                            {
-                                if (distance[new_x][new_y] < new_cost) {
-                                    distance[new_x][new_y] = new_cost;
-                                    if (visited[new_x][new_y] != v_true) {
-                                        visited[new_x][new_y] = v_true;
-                                        req.push_back(pair(new_x, new_y));
-                                    }
-                                }
-                            }
+        // find neighbor where they became closer to source.
+        // TODO: what happens if we parallelize this.
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                int nx = x + dx, ny = y + dy;
+                if (nx >= x_size || ny >= y_size || ny < 0 || nx < 0 ||
+                    (dx == 0 && dy == 0)) {
+                    continue;
+                }
+
+                // atomic read, so data read isn't corrupted, doesn't
+                // actually matter if dxy has been updated by another
+                // thread or not.
+                // TODO: are those atomic actually neccessary?
+                double p_d;
+                // #pragma omp atomic read
+                p_d = dss[x][y];
+                double cc = cell_cost(nx, ny);
+                // #pragma omp critical(relaxed)
+                {
+                    if ((cc <= delta) == (removed != NULL)) {
+                        double n_d = p_d + cc;
+                        double o_d;
+                        // #pragma omp atomic read
+                        o_d = dss[nx][ny];
+                        if (n_d < o_d) {
+                            // #pragma omp atomic read
+                            dss[nx][ny] = n_d;
+                            set_insert(relaxed, pair(nx, ny));
                         }
                     }
                 }
             }
         }
     }
-
-    return req;
 }
 
-void a_star(double** board, int x_size, int y_size, params par) {
+void a_star(double** board_, int x_size_, int y_size_, params par_) {
+    board = board_;
+    x_size = x_size_;
+    y_size = y_size_;
+    par = par_;
+
     int x_end = x_size - 1;
     int y_end = y_size - 1;
 
-    double** cache = init_2D<double>(x_size, y_size);
-    memset(cache[0], 0, y_size * x_size * sizeof(double));
+    delta = find_delta();
 
-    double delta = find_delta(x_size, y_size, board, cache, &par);
-
-    double** distance = init_2D<double>(x_size, y_size);
-    int** bmap = init_2D<int>(x_size, y_size);
-    int** bloc = init_2D<int>(x_size, y_size);
-    vector<vector<pair<int, int>>> b;
+    dss = init_2D<double>(x_size, y_size);
+    bmap = init_2D<int>(x_size, y_size);
+    bloc = init_2D<int>(x_size, y_size);
     // #pragma omp parallel for collapse(2)
     for (int i = 0; i < x_size; i++) {
         for (int j = 0; j < y_size; j++) {
-            distance[i][j] = DBL_MAX;
+            dss[i][j] = DBL_MAX;
             bmap[i][j] = -1;
         }
     }
 
-    distance[0][0] = 0;
-    move(0, 0, bmap, bloc, distance, delta, b);
-    int i = 0;
-    while (!(distance[x_end][y_end] != DBL_MAX && bmap[x_end][y_end] == -1)) {
-        vector<pair<int, int>> removed;
+    // omp_init_lock(&b_all_lock);
+
+    dss[0][0] = cell_cost(0, 0);
+    insert_bi(0, 0, floor(dss[0][0] / delta));
+
+    // printf("%d\n", b.empty());
+    // cout << b[0][0].first << endl;
+
+    // loop needs to terminate once the destination has its distance figured
+    // out. dest's distance will be fixed once it enters a bucket and then leave
+    // that bucket. set dest_i to the bucket dest enter.
+    int dest_i = INT_MAX;
+
+    // this is set with fast clear operation
+    set removed = set_new();
+    set relaxed = set_new();
+
+    for (int i = 0; i <= dest_i; i++) {
+        assert(i < b.size());
+        for (int l = 0; l < b.size(); l++) {
+            cout << l << ": ";
+            for (int k = 0; k < b[l].size(); k++) {
+                cout << b[l][k].first << b[l][k].second;
+            }
+            cout << endl;
+        }
+        printf("i: %d\n\n", i);
         while (!b[i].empty()) {
-            vector<pair<int, int>> req =
-                par_relax(b[i], bmap, distance, true, delta, x_size, y_size,
-                          board, cache, &par);
-            // need fix
-            removed.reserve(removed.size() +
-                            std::distance(b[i].begin(), b[i].end()));
-            removed.insert(removed.end(), b[i].begin(), b[i].end());
+            // process b[i]
+            relax(b[i], &relaxed, &removed);
+
+            // no need to lock as this is not parallelized
+            // all of b[i] should be null member now
             b[i].clear();
 
+            // now insert the relaxed ones back
             // #pragma omp parallel for
-            for (int i = 0; i < req.size(); i++) {
-                move(req[i].first, req[i].second, bmap, bloc, distance, delta,
-                     b);
+            for (int k = 0; k < relaxed.set.size(); k++) {
+                int x = relaxed.set[k].first, y = relaxed.set[k].second;
+                int bi = floor(dss[x][y] / delta);
+                if (x_end == x && y_end == y) {
+                    dest_i = bi;
+                }
+                insert_bi(x, y, bi);
             }
-        }
-        printf("Hi %d\n%f %d\n", i, distance[x_end][y_end], bmap[x_end][y_end]);
-        vector<pair<int, int>> req =
-            par_relax(removed, bmap, distance, false, delta, x_size, y_size,
-                      board, cache, &par);
 
-        // #pragma omp parallel for
-        for (int i = 0; i < req.size(); i++) {
-            move(req[i].first, req[i].second, bmap, bloc, distance, delta, b);
+            set_clear(&relaxed);
         }
-        i++;
+        // now relax the removed ones heavily
+        relax(removed.set, &relaxed, NULL);
+        // #pragma omp parallel for
+        for (int k = 0; k < relaxed.set.size(); k++) {
+            int x = relaxed.set[k].first, y = relaxed.set[k].second;
+            int bi = floor(dss[x][y] / delta);
+            if (x_end == x && y_end == y) {
+                dest_i = bi;
+            }
+            insert_bi(x, y, bi);
+        }
+        set_clear(&relaxed);
+        set_clear(&removed);
     }
 
-    free(cache[0]);
-    free(cache);
-    free(distance[0]);
-    free(distance);
-    free(bmap[0]);
-    free(bmap);
-    free(bloc[0]);
-    free(bloc);
+    for (int x = 0; x < x_size; x++) {
+        for (int y = 0; y < y_size; y++) {
+            cout << dss[x][y] << ' ';
+        }
+        cout << endl;
+    }
+
+    // now construct the path
+    int x = x_end, y = y_end;
+    while (x != 0 || y != 0) {
+        printf("%d %d %g %g\n", x + 1, y + 1, board[x][y], dss[x][y]);
+        int n_x = x, n_y = y;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                int nx = x + dx, ny = y + dy;
+                if (nx >= x_size || ny >= y_size || ny < 0 || nx < 0 ||
+                    (dx == 0 && dy == 0)) {
+                    continue;
+                }
+                if (dss[nx][ny] < dss[n_x][n_y]) {
+                    n_x = nx;
+                    n_y = ny;
+                }
+            }
+        }
+        x = n_x;
+        y = n_y;
+    }
+    printf("%d %d %g %g\n", x + 1, y + 1, board[x][y], dss[x][y]);
 }
 
 /******************************************************************************/
