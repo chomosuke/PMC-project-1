@@ -1,6 +1,0 @@
-Ohayo gazaimasu 4 threads
-rm solution PQ-Dijkstra -f
-clang++ -O3 -fopenmp solution.cpp -o solution -std=c++20
-2460.962500
-Time: 13282624 3.865053
-rm solution PQ-Dijkstra -f

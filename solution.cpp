@@ -22,8 +22,8 @@ using namespace std;
 
 #define MAX_NODES 100000
 
-#define _inline
-// #define _inline inline
+// #define _inline
+#define _inline inline
 
 // #define DEBUG(x) x
 #define DEBUG(x)
@@ -214,11 +214,11 @@ double find_delta() {
     int x_s = min(x_size, 2);
     int y_s = min(y_size, 2);
 
-    // #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     for (int i = 0; i < x_s; i++) {
         for (int j = 0; j < y_s; j++) {
             double cost = cell_cost(i, j);
-            // #pragma omp critical
+#pragma omp critical
             // use reduce
             if (max_cost < cost)
                 max_cost = cost;
@@ -236,8 +236,8 @@ int** bloc;
 // when first == -1, it's a null member.
 vector<vector<pair<int, int>>> b;
 // must obtain b_all_lock before b_lock
-// omp_lock_t b_all_lock;
-// vector<omp_lock_t> b_lock;
+omp_lock_t b_all_lock;
+vector<omp_lock_t> b_lock;
 
 // if not in any bucket then it's no-op
 _inline void remove_b(int x, int y) {
@@ -255,27 +255,27 @@ _inline void insert_bi(int x, int y, int bi) {
     assert(bmap[x][y] == -1);
     bmap[x][y] = bi;
     // TODO: try moving it inside
-    // omp_set_lock(&b_all_lock);
+    omp_set_lock(&b_all_lock);
     while (bi >= b.size()) {
         vector<pair<int, int>> v;
         b.push_back(v);
-        // omp_lock_t l;
-        // omp_init_lock(&l);
-        // b_lock.push_back(l);
+        omp_lock_t l;
+        omp_init_lock(&l);
+        b_lock.push_back(l);
     }
-    // omp_unset_lock(&b_all_lock);
+    omp_unset_lock(&b_all_lock);
 
-    // omp_set_lock(&b_all_lock);
-    // omp_set_lock(&b_lock[bi]);
+    omp_set_lock(&b_all_lock);
+    omp_set_lock(&b_lock[bi]);
     bloc[x][y] = b[bi].size();
     b[bi].push_back(pair(x, y));
-    // omp_unset_lock(&b_lock[bi]);
-    // omp_unset_lock(&b_all_lock);
+    omp_unset_lock(&b_lock[bi]);
+    omp_unset_lock(&b_all_lock);
 }
 
 // removed == NULL means heavy
 void relax(vector<pair<int, int>>& bi, set* relaxed, set* removed) {
-    // #pragma omp parallel for
+#pragma omp parallel for
     // no need to lock anything in this for loop because no vector is
     // getting modified This is because insert isn't being called
     for (int j = 0; j < bi.size(); j++) {
@@ -286,7 +286,7 @@ void relax(vector<pair<int, int>>& bi, set* relaxed, set* removed) {
 
         if (removed != NULL) {
             remove_b(x, y);
-            // #pragma omp critical(removed)
+#pragma omp critical(removed)
             set_insert(removed, pair(x, y));
         }
 
@@ -305,18 +305,18 @@ void relax(vector<pair<int, int>>& bi, set* relaxed, set* removed) {
                 // thread or not.
                 // TODO: are those atomic actually neccessary?
                 double p_d;
-                // #pragma omp atomic read
+#pragma omp atomic read
                 p_d = dss[x][y];
                 double cc = cell_cost(nx, ny);
-                // #pragma omp critical(relaxed)
+#pragma omp critical(relaxed)
                 {
                     if ((cc <= delta) == (removed != NULL)) {
                         double n_d = p_d + cc;
                         double o_d;
-                        // #pragma omp atomic read
+#pragma omp atomic read
                         o_d = dss[nx][ny];
                         if (n_d < o_d) {
-                            // #pragma omp atomic read
+#pragma omp atomic read
                             dss[nx][ny] = n_d;
                             set_insert(relaxed, pair(nx, ny));
                         }
@@ -341,7 +341,7 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
     dss = init_2D<double>(x_size, y_size);
     bmap = init_2D<int>(x_size, y_size);
     bloc = init_2D<int>(x_size, y_size);
-    // #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     for (int i = 0; i < x_size; i++) {
         for (int j = 0; j < y_size; j++) {
             dss[i][j] = DBL_MAX;
@@ -349,13 +349,10 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
         }
     }
 
-    // omp_init_lock(&b_all_lock);
+    omp_init_lock(&b_all_lock);
 
     dss[0][0] = cell_cost(0, 0);
     insert_bi(0, 0, floor(dss[0][0] / delta));
-
-    // printf("%d\n", b.empty());
-    // cout << b[0][0].first << endl;
 
     // loop needs to terminate once the destination has its distance figured
     // out. dest's distance will be fixed once it enters a bucket and then leave
@@ -368,14 +365,13 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
 
     for (int i = 0; i <= dest_i; i++) {
         assert(i < b.size());
-        for (int l = 0; l < b.size(); l++) {
+        DEBUG(for (int l = 0; l < b.size(); l++) {
             cout << l << ": ";
             for (int k = 0; k < b[l].size(); k++) {
                 cout << b[l][k].first << b[l][k].second;
             }
             cout << endl;
-        }
-        printf("i: %d\n\n", i);
+        } printf("i: %d\n\n", i);)
         while (!b[i].empty()) {
             // process b[i]
             relax(b[i], &relaxed, &removed);
@@ -384,8 +380,8 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
             // all of b[i] should be null member now
             b[i].clear();
 
-            // now insert the relaxed ones back
-            // #pragma omp parallel for
+// now insert the relaxed ones back
+#pragma omp parallel for
             for (int k = 0; k < relaxed.set.size(); k++) {
                 int x = relaxed.set[k].first, y = relaxed.set[k].second;
                 int bi = floor(dss[x][y] / delta);
@@ -399,7 +395,7 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
         }
         // now relax the removed ones heavily
         relax(removed.set, &relaxed, NULL);
-        // #pragma omp parallel for
+#pragma omp parallel for
         for (int k = 0; k < relaxed.set.size(); k++) {
             int x = relaxed.set[k].first, y = relaxed.set[k].second;
             int bi = floor(dss[x][y] / delta);
@@ -412,12 +408,12 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
         set_clear(&removed);
     }
 
-    for (int x = 0; x < x_size; x++) {
+    DEBUG(for (int x = 0; x < x_size; x++) {
         for (int y = 0; y < y_size; y++) {
             cout << dss[x][y] << ' ';
         }
         cout << endl;
-    }
+    })
 
     // now construct the path
     int x = x_end, y = y_end;
