@@ -14,8 +14,10 @@
 
 // cpp headers
 #include <iostream>
+#include <mutex>
 #include <omp.h>
 #include <queue>
+#include <shared_mutex>
 #include <vector>
 
 using namespace std;
@@ -211,14 +213,15 @@ _inline void free_set(set self) { free(self.in_set); }
 
 double find_delta() {
     double max_cost = 0;
-    int x_s = min(x_size, 2);
-    int y_s = min(y_size, 2);
+    // int x_s = min(x_size, 2);
+    // int y_s = min(y_size, 2);
+    int x_s = x_size;
+    int y_s = y_size;
 
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) reduction(max : max_cost)
     for (int i = 0; i < x_s; i++) {
         for (int j = 0; j < y_s; j++) {
             double cost = cell_cost(i, j);
-#pragma omp critical
             // use reduce
             if (max_cost < cost)
                 max_cost = cost;
@@ -235,8 +238,9 @@ int** bmap;
 int** bloc;
 // when first == -1, it's a null member.
 vector<vector<pair<int, int>>> b;
+
 // must obtain b_all_lock before b_lock
-omp_lock_t b_all_lock;
+shared_mutex b_all_lock;
 vector<omp_lock_t> b_lock;
 
 // if not in any bucket then it's no-op
@@ -254,30 +258,29 @@ double** dss;
 _inline void insert_bi(int x, int y, int bi) {
     assert(bmap[x][y] == -1);
     bmap[x][y] = bi;
-    // TODO: try moving it inside
-    omp_set_lock(&b_all_lock);
-    while (bi >= b.size()) {
-        vector<pair<int, int>> v;
-        b.push_back(v);
-        omp_lock_t l;
-        omp_init_lock(&l);
-        b_lock.push_back(l);
+    if (bi >= b.size()) {
+        b_all_lock.lock();
+        do {
+            vector<pair<int, int>> v;
+            b.push_back(v);
+            omp_lock_t l;
+            omp_init_lock(&l);
+            b_lock.push_back(l);
+        } while (bi >= b.size());
+        b_all_lock.unlock();
     }
-    omp_unset_lock(&b_all_lock);
 
-    omp_set_lock(&b_all_lock);
+    b_all_lock.lock_shared();
     omp_set_lock(&b_lock[bi]);
     bloc[x][y] = b[bi].size();
     b[bi].push_back(pair(x, y));
     omp_unset_lock(&b_lock[bi]);
-    omp_unset_lock(&b_all_lock);
+    b_all_lock.unlock_shared();
 }
 
 // removed == NULL means heavy
 void relax(vector<pair<int, int>>& bi, set* relaxed, set* removed) {
 #pragma omp parallel for
-    // no need to lock anything in this for loop because no vector is
-    // getting modified This is because insert isn't being called
     for (int j = 0; j < bi.size(); j++) {
         int x = bi[j].first, y = bi[j].second;
         if (x == -1) {
@@ -291,7 +294,7 @@ void relax(vector<pair<int, int>>& bi, set* relaxed, set* removed) {
         }
 
         // find neighbor where they became closer to source.
-        // TODO: what happens if we parallelize this.
+        // #pragma omp parallel for collapse(2)
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 int nx = x + dx, ny = y + dy;
@@ -300,10 +303,11 @@ void relax(vector<pair<int, int>>& bi, set* relaxed, set* removed) {
                     continue;
                 }
 
-                // atomic read, so data read isn't corrupted, doesn't
-                // actually matter if dxy has been updated by another
-                // thread or not.
+                // atomic read, so data read isn't corrupted, doesn't actually
+                // matter if dxy has been updated by another thread or not.
                 // TODO: are those atomic actually neccessary?
+                // The answer is probably not, but they make the code slightly
+                // more portable.
                 double p_d;
 #pragma omp atomic read
                 p_d = dss[x][y];
@@ -348,8 +352,6 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
             bmap[i][j] = -1;
         }
     }
-
-    omp_init_lock(&b_all_lock);
 
     dss[0][0] = cell_cost(0, 0);
     insert_bi(0, 0, floor(dss[0][0] / delta));
