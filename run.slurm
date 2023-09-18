@@ -3,18 +3,17 @@
 #SBATCH --job-name=ass1
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=4
-#SBATCH --time=00:00:10
+#SBATCH --cpus-per-task=72
+#SBATCH --time=00:00:5
 #SBATCH --partition=cascade
 
-echo 'Ohayo gazaimasu 4 threads'
+echo 'Ohayo gazaimasu 72 threads'
 
-module load OpenMPI/4.1.4
 module load Clang/13.0.1
 
 make clean
 make solution
 
-OMP_NUM_THREADS=4 ./solution < grid10x10expensive.txt
+OMP_NUM_THREADS=72 ./solution < grid10x10expensive.txt
 
 make clean
