@@ -1,0 +1,68 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global}
+    \entry{Meyer-1998}{article}{}
+      \name{author}{2}{}{%
+        {{hash=5a33307ed9c69adc57632884fb5fcb79}{%
+           family={Meyer},
+           familyi={M\bibinitperiod},
+           given={U.},
+           giveni={U\bibinitperiod}}}%
+        {{hash=7e58970c1572c206234cfb743cd5308d}{%
+           family={Sanders},
+           familyi={S\bibinitperiod},
+           given={P.},
+           giveni={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{487d8506c4ee71f21b0e62e3846f7555}
+      \strng{fullhash}{487d8506c4ee71f21b0e62e3846f7555}
+      \strng{bibnamehash}{487d8506c4ee71f21b0e62e3846f7555}
+      \strng{authorbibnamehash}{487d8506c4ee71f21b0e62e3846f7555}
+      \strng{authornamehash}{487d8506c4ee71f21b0e62e3846f7555}
+      \strng{authorfullhash}{487d8506c4ee71f21b0e62e3846f7555}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{The single source shortest path problem for arbitrary directed graphs with n nodes, m edges and nonnegative edge weights can sequentially be solved using O(n·logn+m) operations. However, no work-efficient parallel algorithm is known that runs in sublinear time for arbitrary graphs. In this paper we present a rather simple algorithm for the single source shortest path problem. Our new algorithm, which we call Delta-stepping, can be implemented very efficiently in sequential and parallel setting for a large class of graphs. For random edge weights and arbitrary graphs with maximum node degree d, sequential Δ-stepping needs O(n+m+d·L) total average-case time, where L denotes the maximum shortest path weight from the source node s to any node reachable from s. For example, this means linear time on directed graphs with constant maximum degree. Our best parallel version for a PRAM takes O(d·L·logn+log2n) time and O(n+m+d·L·logn) work on average. For random graphs, even O(log2n) time and O(n+m) work on average can be achieved. We also discuss how the algorithm can be adapted to work with nonrandom edge weights and how it can be implemented on distributed memory machines. Experiments indicate that already a simple implementation of the algorithm achieves significant speedup on real machines.}
+      \field{issn}{0196-6774}
+      \field{journaltitle}{Journal of Algorithms}
+      \field{note}{1998 European Symposium on Algorithms}
+      \field{number}{1}
+      \field{title}{Δ-stepping: a parallelizable shortest path algorithm}
+      \field{volume}{49}
+      \field{year}{1998}
+      \field{pages}{114\bibrangedash 152}
+      \range{pages}{39}
+      \verb{doi}
+      \verb https://doi.org/10.1016/S0196-6774(03)00076-2
+      \endverb
+      \verb{urlraw}
+      \verb https://www.sciencedirect.com/science/article/pii/S0196677403000762
+      \endverb
+      \verb{url}
+      \verb https://www.sciencedirect.com/science/article/pii/S0196677403000762
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

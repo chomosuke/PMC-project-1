@@ -39,15 +39,34 @@
 
 \usepackage{enumitem}
 
+\usepackage[style=ieee]{biblatex}
+\addbibresource{refs.bib}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
 \begin{document}
 
 \section*{Introduction}
+
 This report outlines and analyses an implementation of a parallel algorithm for the following
 problem:\\
 Given a grid, where each square has a positive integer as its cost, find the shortest 8 connected
 path from the top left most square to the bottom right most square, where the distance of a path is
 defined as the sum of costs of all squares on the path.
 
+The algorithm I've devised is a modified version of the delta stepping algorithm from Mayer and
+Sanders \cite{Meyer-1998}, described in the following pseudocode:
+\begin{algorithm}
+	\begin{algorithmic}
+		\State \(x_{end}\gets x_{size} - 1\)
+		\State \(y_{end}\gets y_size - 1\)
 
+		\State \(distance(0, 0)\gets cost(0, 0)\)
+	\end{algorithmic}
+\end{algorithm}
+
+
+\printbibliography
 
 \end{document}

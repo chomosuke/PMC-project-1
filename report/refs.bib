@@ -1,0 +1,34 @@
+@article{Meyer-1998,
+	title = {Δ-stepping: a parallelizable shortest path algorithm},
+	journal = {Journal of Algorithms},
+	volume = {49},
+	number = {1},
+	pages = {114-152},
+	year = {1998},
+	note = {1998 European Symposium on Algorithms},
+	issn = {0196-6774},
+	doi = {https://doi.org/10.1016/S0196-6774(03)00076-2},
+	url = {https://www.sciencedirect.com/science/article/pii/S0196677403000762},
+	author = {U. Meyer and P. Sanders},
+	abstract = {The single source shortest path problem for arbitrary directed
+	            graphs with n nodes, m edges and nonnegative edge weights can
+	            sequentially be solved using O(n·logn+m) operations. However, no
+	            work-efficient parallel algorithm is known that runs in sublinear
+	            time for arbitrary graphs. In this paper we present a rather
+	            simple algorithm for the single source shortest path problem. Our
+	            new algorithm, which we call Delta-stepping, can be implemented
+	            very efficiently in sequential and parallel setting for a large
+	            class of graphs. For random edge weights and arbitrary graphs
+	            with maximum node degree d, sequential Δ-stepping needs
+	            O(n+m+d·L) total average-case time, where L denotes the maximum
+	            shortest path weight from the source node s to any node reachable
+	            from s. For example, this means linear time on directed graphs
+	            with constant maximum degree. Our best parallel version for a
+	            PRAM takes O(d·L·logn+log2n) time and O(n+m+d·L·logn) work on
+	            average. For random graphs, even O(log2n) time and O(n+m) work on
+	            average can be achieved. We also discuss how the algorithm can be
+	            adapted to work with nonrandom edge weights and how it can be
+	            implemented on distributed memory machines. Experiments indicate
+	            that already a simple implementation of the algorithm achieves
+	            significant speedup on real machines.},
+}
