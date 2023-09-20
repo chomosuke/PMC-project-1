@@ -35,6 +35,8 @@
 	urlcolor=hyperref,
 	}
 
+\usepackage[section]{placeins}
+
 \newcommand{\n}{\ \-}
 
 \usepackage{enumitem}
@@ -217,7 +219,118 @@ I have collected the following metrics of performance:
 \end{itemize}
 
 \section*{Experiments}
+\begin{figure}[!htb]
+\includegraphics[width=\textwidth]{overall-clock.png}
+\caption{Clock Ticked Overall}
+\label{fig:1}
+\end{figure}
+
+\begin{table}[!htb]
+\includegraphics[width=\textwidth]{overall-clock-table.png}
+\caption{Clock Ticked Overall}
+\label{tab:1}
+\end{table}
+
+\begin{figure}[!htb]
+\includegraphics[width=\textwidth]{overall-time.png}
+\caption{Time Taken Overall}
+\label{fig:2}
+\end{figure}
+
+\begin{table}[!htb]
+\includegraphics[width=\textwidth]{overall-time-table.png}
+\caption{Time Taken Overall}
+\label{tab:2}
+\end{table}
+
+\begin{figure}[!htb]
+\includegraphics[width=\textwidth]{cell-cost-clock.png}
+\caption{Clock Ticked Calculating Cell Cost}
+\label{fig:3}
+\end{figure}
+
+\begin{table}[!htb]
+\includegraphics[width=\textwidth]{cell-cost-clock-table.png}
+\caption{Clock Ticked Calculating Cell Cost}
+\label{tab:3}
+\end{table}
+
+\begin{figure}[!htb]
+\includegraphics[width=\textwidth]{cell-cost-time.png}
+\caption{Time Taken Calculating Cell Cost}
+\label{fig:4}
+\end{figure}
+
+\begin{table}[!htb]
+\includegraphics[width=\textwidth]{cell-cost-time-table.png}
+\caption{Time Taken Calculating Cell Cost}
+\label{tab:4}
+\end{table}
+
+\begin{figure}[!htb]
+\includegraphics[width=\textwidth]{path-finding-clock.png}
+\caption{Time Taken Overall Minus Time Taken Calculating Cell Cost}
+\label{fig:5}
+\end{figure}
+
+\begin{table}[!htb]
+\includegraphics[width=\textwidth]{path-finding-clock-table.png}
+\caption{Time Taken Overall Minus Time Taken Calculating Cell Cost}
+\label{tab:5}
+\end{table}
+
+\begin{figure}[!htb]
+\includegraphics[width=\textwidth]{path-finding-time.png}
+\caption{Clock Ticked Overall Minus Clock Ticked Calculating Cell Cost}
+\label{fig:6}
+\end{figure}
+
+\begin{table}[!htb]
+\includegraphics[width=\textwidth]{path-finding-time-table.png}
+\caption{Clock Ticked Overall Minus Clock Ticked Calculating Cell Cost}
+\label{tab:6}
+\end{table}
+
+\begin{table}[!htb]
+\includegraphics[width=\textwidth]{dijkstra-table.png}
+\caption{Time and Clock tick taken by the sequential Dijkstra's algorithm}
+\label{tab:7}
+\end{table}
+
+Figure \ref{fig:1} and Table \ref{tab:1} shows the amount of CPU time taken by each sample inputs
+for each thread counts. CPU time excludes the time taken for IO and the time any core spent idling.
+
+Figure \ref{fig:2} and Table \ref{tab:2} shows the amount of real world time that has elapsed since
+the the algorithm started running til the algorithm has finished printing out all the results. This
+includes the time taking to print the shortest path to stdout but does not include the time taken to
+read the input in.
+
+Figure \ref{fig:3} and Table \ref{tab:3} shows the amount of CPU time taken to calculate the cost of
+all cells. This time also includes the time taken to calculate the delta. However, because
+calculating the delta is just one single division and maximum reduce, the time of calculating the
+cost should dominate the time measured and the extra time for calculating the delta should be
+minimum.
+
+Figure \ref{fig:4} and Table \ref{tab:4} shows the amount of real world time that has elapsed while
+all cell costs are being calculated. This is measured at the same point as the CPU time for cell
+cost.
+
+Figure \ref{fig:5} and Table \ref{tab:5} shows the difference between the overall clock time taken
+and the time taken to overall. The original intention of this data is to analyze the time taken by
+the actual path finding algorithm. However, it appears to be dominated by noise.
+
+Figure \ref{fig:6} and Table \ref{tab:6} shows the difference between the elapsed real world time
+taken by the whole algorithm and the elapsed real world time taken by the cell costs evaluation.
+These data again appears to be dominated by noise.
+
+Table \ref{tab:7} shows both the elapsed real time taken and the amount of CPU time taken by the
+sequential Dijkstra's algorithm. Those two measurements are somewhat duplicated because the
+sequential algorithm only uses one core, so that core is busy most of the time and the CPU time ends
+up being roughly proportional to each other.
+
 \section*{Discussion}
+
+
 \section*{Conclusion}
 
 \printbibliography
