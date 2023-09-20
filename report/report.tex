@@ -70,7 +70,7 @@ Sanders \cite{Meyer-1998}, described in the algorithm 1 with its functions in al
 			\For{\(y \gets 0\) \textbf{to} \(y_{end}\)}\textbf{ in parallel}
 				\State $distance[x][y] \gets \infty$
 				\State $bmap[x][y] \gets -1$ \Comment{bmap map (x, y) to the which b[i] set they're
-				in, hence speeding up the process.}
+				in, hence speeding up the \textsc{Remove}.}
 			\EndFor
 		\EndFor
 
@@ -99,7 +99,7 @@ Sanders \cite{Meyer-1998}, described in the algorithm 1 with its functions in al
 
 		\State $x \gets x_{end}$ \Comment{Reconstruct the path from distance.}
 		\State $y \gets y_{end}$
-		\State $path \gets []$
+		\State $path \gets [ ]$
 		\While{$x \ne 0 \land y \ne 0$}
 			\State $x_{pred} \gets x$
 			\State $y_{pred} \gets y$

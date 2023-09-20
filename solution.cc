@@ -420,7 +420,7 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
     // now construct the path
     int x = x_end, y = y_end;
     while (x != 0 || y != 0) {
-        printf("%d %d %g %g\n", x + 1, y + 1, board[x][y], dss[x][y]);
+        printf("%d %d\n", x + 1, y + 1);
         int n_x = x, n_y = y;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
@@ -438,7 +438,8 @@ void a_star(double** board_, int x_size_, int y_size_, params par_) {
         x = n_x;
         y = n_y;
     }
-    printf("%d %d %g %g\n", x + 1, y + 1, board[x][y], dss[x][y]);
+    printf("%d %d\n", x + 1, y + 1);
+    printf("%g\n", dss[x_end][y_end]);
 }
 
 /******************************************************************************/
