@@ -63,6 +63,66 @@ Sanders \cite{Meyer-1998}, described in the following pseudocode:
 	\begin{algorithmic}[1]
 		\State \(x_{end}\gets x_{size} - 1\)
 		\State \(y_{end}\gets y_{size} - 1\)
+
+		\State \(delta\gets \Call{FindDelta}{ }\)
+		\For{\(x \gets 0\) \textbf{to} \(x_{end}\)}\textbf{ in parallel}
+			\For{\(y \gets 0\) \textbf{to} \(y_{end}\)}\textbf{ in parallel}
+				\State $distance[x][y] \gets \infty$
+				\State $bmap[x][y] \gets -1$ \Comment{bmap map (x, y) to the which b[i] set they're
+				in, hence speeding up the process.}
+			\EndFor
+		\EndFor
+
+		\State \(distance[0][0]\gets \Call{Cost}{0, 0}\)
+		\State \Call{Insert}{0, 0}
+
+		\State $i_{dest} \gets \infty$
+		\State $removed \gets \emptyset$
+		\State $relaxed \gets \emptyset$
+
+		\State $i \gets 0$
+		\While{$i < i_{dest}$}
+			\While{b[i] is not empty}
+				\State \Call{Relax}{b[i], relaxed, removed}
+				\State $b[i] \gets \emptyset$
+				\For{$\textbf{each} (x, y) \in relaxed$} \textbf{in parallel}
+					\State \Call{Insert}{x, y}
+					\If{$ x_{end} = x \land y_{end} = y $}
+						\State $i_{dest} \gets i$
+					\EndIf
+				\EndFor
+			\EndWhile
+			\State $relaxed \gets \emptyset$
+			\State $removed \gets \emptyset$
+		\EndWhile
+
+		\Comment{Reconstruct the path from distance.}
+		\State $x \gets x_{end}$
+		\State $y \gets y_{end}$
+		\State $path \gets []$
+		\While{$x \ne 0 \land y \ne 0$}
+			\State $x_{pred} \gets x$
+			\State $y_{pred} \gets y$
+			\For{\(dx \gets -1, 0, 1\)}
+				\For{\(dy \gets -1, 0, 1\)}
+			\State $x_{new} \gets x + dx$
+			\State $y_{new} \gets y + dy$
+					\If{\((x_{new}, y_{new}) \text{ is valid coordinate} \land (x_{new},
+					y_{new}) \ne (x, y)\)}
+						\If{$distance[x_{new}][y_{new}] < distance[x_{pred}][y_{pred}]$}
+							\State $x_{pred} \gets x_{new}$
+							\State $y_{pred} \gets y_{new}$
+						\EndIf
+					\EndIf
+				\EndFor
+			\EndFor
+			\State $path prepend (x_{pred}, y_{pred})$
+		\EndWhile
+		\State \Return path
+	\end{algorithmic}
+\end{algorithm}
+\begin{algorithm}
+	\begin{algorithmic}[1]
 		\Function{FindDelta}{ }
 			\For{\(x \gets 0\) \textbf{to} \(x_{end}\)}\textbf{ in parallel}
 				\For{\(y \gets 0\) \textbf{to} \(y_{end}\)}\textbf{ in parallel}
@@ -71,17 +131,21 @@ Sanders \cite{Meyer-1998}, described in the following pseudocode:
 			\EndFor
 			\State \Return \(cost_{max} / 8\)
 		\EndFunction
-
-		\State \(distance[0][0]\gets \Call{Cost}{0, 0}\)
-		\State \(delta\gets \Call{FindDelta}{ }\)
+		\Function{Remove}{x, y}
+			\If{$bmap[x][y] \ne -1$}
+				\State $b[bmap[x][y]] \gets b[bmap[x][y]] \setminus {(x, y)}$
+			\EndIf
+		\EndFunction
+		\Function{Insert}{x, y}
+			\State $i \gets \floor{distance[x][y] / delta}$
+			\State $bmap[x][y] \gets i$
+			\State $b[i] \gets b[i] \cup (x, y)$
+		\EndFunction
 
 		\Function{Relax}{to-relax, relaxed, removed} \Comment{pass NULL as removed will cause the
 		function to only Relax heavy edges. Pass a set as removed will cause the function to call
 		\textsc{Remove} for each coordinate in to-relax and add them to removed.}
-			\For{\textbf{each} \((x, y) \in \) to-relax}
-				\If{x = -1} \Comment{Marked as removed already.}
-					\State \textbf{continue}
-				\EndIf
+			\For{\textbf{each} \((x, y) \in \) to-relax} \textbf{in parallel}
 				\If{\(removed \ne NULL\)}
 					\State \Call{Remove}{x, y}
 					\State \(removed \gets removed \cap (x, y)\)
@@ -107,10 +171,9 @@ Sanders \cite{Meyer-1998}, described in the following pseudocode:
 				\EndFor
 			\EndFor
 		\EndFunction
-
 	\end{algorithmic}
 \end{algorithm}
-\\
+
 Note that \(\Call{Cost}{x, y}\) returns the cost of the cell on \(x_{th}\) row and \(y_{th}\).
 Furthermore, while the cost takes a long time to calculate for the first time. This function caches
 the cost in a 2D array so subsequence call returns instantly. This has the additional effect of
