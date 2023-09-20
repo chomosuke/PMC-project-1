@@ -1,4 +1,4 @@
-rm solution PQ-Dijkstra -f
+﻿rm solution PQ-Dijkstra -f
 clang++ -O3 -fopenmp solution.cc -o solution -std=c++20
 1 threads
 ./grid10x10edge.txt
@@ -322,7 +322,7 @@ Cell Cost Time: 2715970 1.025374
 852.3
 Time: 2719620 1.026866
 ./grid10x10faster.txt
-Cell Cost Time: 460226 0.117528
+Cell Cost Time: 520643 0.139585
 10 10
 10 9
 10 8
@@ -342,7 +342,7 @@ Cell Cost Time: 460226 0.117528
 2 1
 1 1
 3316.5
-Time: 895204 0.279860
+Time: 524912 0.140824
 ./grid10x10zigzag.txt
 Cell Cost Time: 14782 0.013746
 10 10

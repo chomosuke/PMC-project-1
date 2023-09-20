@@ -195,7 +195,26 @@ parallel as it should be and further improvement on data structures and hence pe
 made.
 
 \section*{Methodology}
-To confirm and measure the performance of my algorithm, I've 
+To confirm and measure the performance of my algorithm, I've run the algorithm's implementation on
+spartan with 1, 2, 4, 8, 16, 32 and 72 threads respectively. The input samples I used are 10x10edge,
+10x10expensive, 10x10fast, 10x10faster, 10x10zigzag, 4x4edge and 4x4Z. Among those input samples,
+10x10expensive, 10x10fast and 10x10faster are three relatively similar samples with their only
+significant difference between each other being the cost of calculating the cost of a cell. These
+three samples will provide us with insight over how the overall runtime changes with different cost
+of calculating the cost of cells. I've also run a sequential Dijkstra's algorithm implementation
+with the same hardware to act as baseline to further evaluate the performance of my delta stepping
+algorithm.
+
+I have collected the following metrics of performance:
+\begin{itemize}
+	\item The overall time taken to run the algorithm.
+	\item The overall time taken to calculate the delta, which should be approximately the overall
+		time taken to calculate all costs of cells.
+	\item The amount of CPU time used to run the whole algorithm. This should be a good
+		approximation of the amount of work done by the algorithm.
+	\item The amount of CPU time used to calculate all costs of cells. This should be a good
+		approximation of the amount of work done to calculate the costs of cells.
+\end{itemize}
 
 \section*{Experiments}
 \section*{Discussion}
