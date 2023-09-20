@@ -45,6 +45,8 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 
+\MakeRobust{\Call}
+
 \begin{document}
 
 \section*{Introduction}
@@ -58,14 +60,75 @@ defined as the sum of costs of all squares on the path.
 The algorithm I've devised is a modified version of the delta stepping algorithm from Mayer and
 Sanders \cite{Meyer-1998}, described in the following pseudocode:
 \begin{algorithm}
-	\begin{algorithmic}
+	\begin{algorithmic}[1]
 		\State \(x_{end}\gets x_{size} - 1\)
-		\State \(y_{end}\gets y_size - 1\)
+		\State \(y_{end}\gets y_{size} - 1\)
+		\Function{FindDelta}{ }
+			\For{\(x \gets 0\) \textbf{to} \(x_{end}\)}\textbf{ in parallel}
+				\For{\(y \gets 0\) \textbf{to} \(y_{end}\)}\textbf{ in parallel}
+					\State \(cost_{max} \gets \Call{Max}{cost_{max}, \Call{Cost}{x, y}}\)
+				\EndFor
+			\EndFor
+			\State \Return \(cost_{max} / 8\)
+		\EndFunction
 
-		\State \(distance(0, 0)\gets cost(0, 0)\)
+		\State \(distance[0][0]\gets \Call{Cost}{0, 0}\)
+		\State \(delta\gets \Call{FindDelta}{ }\)
+
+		\Function{Relax}{to-relax, relaxed, removed} \Comment{pass NULL as removed will cause the
+		function to only Relax heavy edges. Pass a set as removed will cause the function to call
+		\textsc{Remove} for each coordinate in to-relax and add them to removed.}
+			\For{\textbf{each} \((x, y) \in \) to-relax}
+				\If{x = -1} \Comment{Marked as removed already.}
+					\State \textbf{continue}
+				\EndIf
+				\If{\(removed \ne NULL\)}
+					\State \Call{Remove}{x, y}
+					\State \(removed \gets removed \cap (x, y)\)
+				\EndIf
+				\For{\(dx \gets -1, 0, 1\)}
+					\For{\(dy \gets -1, 0, 1\)}
+						\State \(x_{next} \gets x + dx\)
+						\State \(y_{next} \gets y + dy\)
+						\If{\((x_{next}, y_{next}) \text{ is valid coordinate} \land (x_{next},
+						y_{next}) \ne (x, y)\)}
+							\If{$(\Call{Cost}{x_{next}, y_{next}} \le delta) \oplus (removed =
+							NULL)$} \Comment{If removed is null, only relax heavy edges, otherwise
+							only relax light edges.}
+								\State $distance_{new} \gets distance[x][y] + \Call{Cost}{x_{next},
+								y_{next}}$
+								\If{$distance_{new} < distance[x_{next}][y_{next}]$}
+									\State $distance[x_{next}][y_{next}] \gets distance_{new}$
+									\State $relaxed \gets relaxed \cap (x_{next}, y_{next})$
+								\EndIf
+							\EndIf
+						\EndIf
+					\EndFor
+				\EndFor
+			\EndFor
+		\EndFunction
+
 	\end{algorithmic}
 \end{algorithm}
+\\
+Note that \(\Call{Cost}{x, y}\) returns the cost of the cell on \(x_{th}\) row and \(y_{th}\).
+Furthermore, while the cost takes a long time to calculate for the first time. This function caches
+the cost in a 2D array so subsequence call returns instantly. This has the additional effect of
+calculating the cost of each cell upfront in a parallel fashion during the find\_ delta procedure.
+Not only does this allow delta to be calculated at the optimal value. It also allows the load of
+calculating the cost of each cell to be spread evenly among all processors, taking advantage of
+parallelization for the most expensive part of the algorithm.
+Furthermore, to ensure that relaxed and removed can be queried in constant time as well as being
+made emptied in constant time, I implemented them as 2D int arrays where (x, y) is in the set if
+set[x][y] = true-value. Here true value is an int. By incrementing true-value by 1 we can empty
+the set very quickly.
 
+\section*{Methodology}
+To confirm and measure the performance of my algorithm, I've 
+
+\section*{Experiments}
+\section*{Discussion}
+\section*{Conclusion}
 
 \printbibliography
 

@@ -1,0 +1,52 @@
+procedure find_delta()
+	parallel for x, y {
+		if (max_cost < cost(x, y)) {
+			max_cost = cost;
+		}
+	}
+	return max_cost / 8;
+
+procedure relax(to_relax, relaxed, removed) {
+	parallel for i <- 0 to to_relax.size() {
+		x <- to_relax(i).first
+		y <- to_relax(i).second
+		if (x == -1) { // this element has already been removed
+			continue;
+		}
+
+		if (removed != NULL) { // record removed nodes
+			remove(x, y)
+			removed <- removed U (x, y)
+		}
+
+		for dx <- -1, 0, 1 {
+			for dy <- -1, 0, 1 {
+				
+			}
+		}
+	}
+}
+
+x_end <- x_size - 1
+y_end <- y_size - 1
+
+delta <- find_delta()
+
+parallel for x, y {
+	distance(x, y) <- infinity
+	bmap(x, y) <- -1
+}
+
+distance(0, 0) <- cost(0, 0)
+insert(0, 0)
+
+removed <- empty
+relaxed <- empty
+
+i <- 0
+while x_end, y_end hasn't been removed from all b {
+	while b(i) isn't empty {
+		relax(b(i), relaxed, removed)
+		b(i) <- empty
+	}
+}
