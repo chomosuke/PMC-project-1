@@ -292,7 +292,7 @@ I have collected the following metrics of performance:
 \end{table}
 
 \begin{table}[!htb]
-\includegraphics[width=\textwidth]{dijkstra-table.png}
+\includegraphics[width=10cm]{dijkstra-table.png}
 \caption{Time and Clock tick taken by the sequential Dijkstra's algorithm}
 \label{tab:7}
 \end{table}
@@ -329,9 +329,74 @@ sequential algorithm only uses one core, so that core is busy most of the time a
 up being roughly proportional to each other.
 
 \section*{Discussion}
+Compared the overall time taken by my delta stepping algorithm \ref{tab:2} with a single thread, and
+the overall time taken by the Dijkstra's algorithm \ref{tab:7}, we can see that for 10x10edge,
+10x10expensive and 10x10fast, my delta stepping algorithm took roughly twice as long as the Dijkstra
+algorithm. I believe this is due to the fact that the Dijkstra's algorithm only calculate the cell
+costs needed to find the shortest path while my delta stepping algorithm always calculate all the
+cell costs upfront. However, we can also see that for 10x10faster, 10x10zigzag, 4x4Z and 4x4edge, my
+delta stepping algorithm performed significantly better than the Dijkstra's algorithm. I believe
+this is due to the fact that the Dijkstra's algorithm calculate the cell costs from scratch
+every time it needs to query it while my delta stepping algorithm only calculate each cell costs
+once.
 
+Nonetheless, when we look at my delta stepping algorithm with more than 2 threads \ref{tab:2}, we
+can see that it ran significantly faster than the Dijkstra's algorithm. We can gain more insight
+into the speed-up by looking into Table \ref{tab:6} and Figure \ref{fig:6}. Here we can see that the
+vast majority of the time taken by the delta stepping algorithm are spent calculating the cell
+costs. This make sense because cell costs are made to be intentionally expensive while the graph
+itself is relatively small with only 100 nodes and less than 400 edges. As a result, the speed-up
+we've obtained does not serve as a good source of analysis for generic parallel shortest path
+algorithm because our result is dominated by an easily parallizable step. For future work, we can
+test our algorithm without expensive cell cost calculation and with significantly larger graphs.
 
-\section*{Conclusion}
+When we look at Figure \ref{fig:2} and Table \ref{tab:2}, we can see that in the case of 10x10edge
+and 10x10expensive, the elapsed time roughly halves every time the number of thread doubles. This
+make sense as those two input sample's calculation are heavily dominated by calculating the cell
+costs. We can also see that for other input samples, the overall elapsed time in fact increases when
+going from 32 threads to 72 threads and for some of them even from 16 threads to 32 threads. I
+believe this is because for the node the algorithm running on are made up by 4 18 cores CPUs. As the
+number of threads increase beyond 18, the algorithm can no longer run on a single CPU and therefore
+the application starts incurring the communication costs between CPUs. If the algorithm doesn't
+have a lot of easily parallizable task to do, it will spend most of its time on the communication
+costs hence increasing the overall time taken by the algorithm.
+
+When we look at Figure \ref{fig:1} and Table \ref{tab:1}, we can see that the total CPU time
+increases as the number of threads increases. This is especially prevalent on small input sample
+such as 4x4Z and 4x4edge where the CPU time more than doubled going from 32 thread to 72 threads.
+This again matches with our earlier analysis of communication overhead between CPUs making the
+algorithms slower instead of faster.
+
+If we try to ignore the cell costs time and attempt to view the time taken to calculate the path
+itself, we find very noisy data in Figure \ref{fig:6} and Table \ref{tab:6}. This is potentially due
+to our flawed methodology of only doing one run per thread count per input sample instead of
+averaging over multiple runs. If we try to ignore the noise in the data and attempt to view the
+trend, we can see that the time of everything except cell costs calculation actually increases
+significantly as the number of thread increases. I believe this is due to the fact that there isn't
+a lot of work to be done with path finding, and, as mentioned above, that the communication overhead
+between CPUs across sockets starts dominate the total running time. This communication overhead can
+also explain the large amount of variation between each run. It could be that our algorithm are
+sometimes being assigned to cores that are spread out among the sockets and sometimes assigned to
+cores that are on the same sockets.
+
+Speculating, if we increase the core count of the hardware the algorithm is running on as well and
+the thread count of the algorithm to match the core count, the running time of the algorithm for
+input 10x10expensive and 10x10edge would not see significant improvement after the core count exceed
+100, as there are only 100 cell costs to calculate. If we increase the size of the graph well beyond
+the core count and have cell costs calculation remain the dominating cost of the algorithm, we will
+see a close to inversely proportional relationship between the running time and the core count with
+some overhead as the core count increases due to communication overhead.
+
+From a theoretical standpoint, if we discard the dominating factor that is the cell cost
+calculation, my delta stepping algorithm should have a time complexity of $O((m+n)log^2(m*n))$ where
+\(m\) and \(n\) are the width and height of the grid. This result is a specialization of the more
+general result that is proven by Meyer and Sander in \cite{Meyer-1998} when the delta is chosen to
+be \(\Theta(1/d)\) and the edge weights are uniformly distributed in \([0, 1]\). However, my
+implementation of the algorithm did not take advantage many of the parallizable data structure
+presented by Meyer and Sander \cite{Meyer-1998}. In particular, my buckets are implemented as C++
+vectors which are not thread safe and have to be surrounded by locks to ensure their correctness.
+When viewing the problem as a path finding problem rather than a cell cost calculating problem,
+there are many improvements to be made to my algorithm.
 
 \printbibliography
 
