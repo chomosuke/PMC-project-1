@@ -58,8 +58,9 @@ path from the top left most square to the bottom right most square, where the di
 defined as the sum of costs of all squares on the path.
 
 The algorithm I've devised is a modified version of the delta stepping algorithm from Mayer and
-Sanders \cite{Meyer-1998}, described in the following pseudocode:
+Sanders \cite{Meyer-1998}, described in the algorithm 1 with its functions in algorithm 2.
 \begin{algorithm}
+	\caption{}
 	\begin{algorithmic}[1]
 		\State \(x_{end}\gets x_{size} - 1\)
 		\State \(y_{end}\gets y_{size} - 1\)
@@ -96,8 +97,7 @@ Sanders \cite{Meyer-1998}, described in the following pseudocode:
 			\State $removed \gets \emptyset$
 		\EndWhile
 
-		\Comment{Reconstruct the path from distance.}
-		\State $x \gets x_{end}$
+		\State $x \gets x_{end}$ \Comment{Reconstruct the path from distance.}
 		\State $y \gets y_{end}$
 		\State $path \gets []$
 		\While{$x \ne 0 \land y \ne 0$}
@@ -122,6 +122,7 @@ Sanders \cite{Meyer-1998}, described in the following pseudocode:
 	\end{algorithmic}
 \end{algorithm}
 \begin{algorithm}
+	\caption{Functions of Algorithm 1}
 	\begin{algorithmic}[1]
 		\Function{FindDelta}{ }
 			\For{\(x \gets 0\) \textbf{to} \(x_{end}\)}\textbf{ in parallel}
@@ -177,14 +178,21 @@ Sanders \cite{Meyer-1998}, described in the following pseudocode:
 Note that \(\Call{Cost}{x, y}\) returns the cost of the cell on \(x_{th}\) row and \(y_{th}\).
 Furthermore, while the cost takes a long time to calculate for the first time. This function caches
 the cost in a 2D array so subsequence call returns instantly. This has the additional effect of
-calculating the cost of each cell upfront in a parallel fashion during the find\_ delta procedure.
-Not only does this allow delta to be calculated at the optimal value. It also allows the load of
-calculating the cost of each cell to be spread evenly among all processors, taking advantage of
-parallelization for the most expensive part of the algorithm.
-Furthermore, to ensure that relaxed and removed can be queried in constant time as well as being
+calculating the cost of each cell upfront in a parallel fashion during the \textsc{FindDelta}
+procedure. Not only does this allow delta to be calculated at the optimal value. It also allows the
+load of calculating the cost of each cell to be spread evenly among all processors, taking advantage
+of parallelization for the most expensive part of the algorithm.
+
+Furthermore, to ensure that $relaxed$ and $removed$ can be queried in constant time as well as being
 made emptied in constant time, I implemented them as 2D int arrays where (x, y) is in the set if
-set[x][y] = true-value. Here true value is an int. By incrementing true-value by 1 we can empty
+$set[x][y] = trueValue$. Here $trueValue$ is an integer. By incrementing $trueValue$ we can empty
 the set very quickly.
+
+The implementation of the algorithm is less than ideal. Because I choose to use vector in the C++
+standard library, which isn't thread safe, I have to heavily used locking and OpenMP critical
+region to ensure data races does not happen. This means the implementation of the algorithm isn't as
+parallel as it should be and further improvement on data structures and hence performance can be
+made.
 
 \section*{Methodology}
 To confirm and measure the performance of my algorithm, I've 
